@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, FlatList, Alert,TouchableOpacity } from 'react-native';
 import axios from 'axios';
-import { handleMenu } from '../libs/authService';
+import { handleMenu } from '../../../libs/authService';
 import { useLocalSearchParams, useNavigation} from 'expo-router';
-
+import { Link, useRouter } from 'expo-router'
 
 const MenuScreen = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { username } = useLocalSearchParams();
-  const navigation = useNavigation(); // Hook para la navegación
+
+  const router = useRouter();
+  //const navigation = useNavigation(); // Hook para la navegación
+  
 
  
 
@@ -49,13 +52,13 @@ const MenuScreen = () => {
   }
 
   const handlePress = (descripcion) => {
-    navigation.push('/', { descripcion }); // Navega a la pantalla de detalles y pasa la descripción
-    
+    router.push(`../../${ descripcion.toLowerCase() }`); // Navega a la pantalla de detalles y pasa la descripción
+    console.log(descripcion)
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Datos Obtenidos:</Text>
+      
 
       <FlatList
         data={data}
