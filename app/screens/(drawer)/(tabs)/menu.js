@@ -65,7 +65,7 @@ const MenuScreen = () => {
         keyExtractor={(item) => item.id.toString()} // Usando `id` como clave única
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.itemContainer} onPress={() => handlePress(item.descripcion)}>
-            <Text>{item.descripcion ? item.descripcion : "Sin descripción"}</Text>
+            <Text style={styles.itemText}>{item.descripcion ? item.descripcion : "Sin descripción"}</Text>
           </TouchableOpacity>
         )}
       />
@@ -94,12 +94,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   itemContainer: {
-    padding: 12,
+    
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#CCCCCC',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: 'blue',
     borderRadius: 8,
     marginBottom: 8,
+  },
+  itemText: {
+    color:'white'
   },
 });
 
