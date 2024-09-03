@@ -7,7 +7,7 @@ export const handleLogin = async (username, password) => {
       'X-Token': 'mu@3Y7RTumKh^FbEZD?aD9*5qctA$a#3eB*7PKFPp_!FNjgdP!V4Z2w+w5mJ!z7KHUf?y=#6@5Zf7q3#xygTp^#U7M9Lr6-TmbMb+y7!Pe!DNLcGZaR=aTvgabp$Y=Ya#et+_EcJ+Q^-yr3qcw2BPj7r$XxTJ2Zgh^3ZTYWstdUnaFp%jCgq&F=gUN3P_RHecJ&_7jnSYVWgCvj5R_HSX=GwVK=2$czzm$ddZSu-rk8Z!6!FSMN?zB3YzjTz5*zN',
     };
 
-    const response = await axios.post('http://vsk8s.californiasa.com.ar:31030/supermercados/api/query/logon', null, {
+    const response = await axios.post('http://kcode.californiasa.com.ar:31030/supermercados/api/query/logon', null, {
       params: {
         uid: username,
         pwd: password,
@@ -32,7 +32,7 @@ export const handleMenu = async (username) => {
       'X-Token': 'mu@3Y7RTumKh^FbEZD?aD9*5qctA$a#3eB*7PKFPp_!FNjgdP!V4Z2w+w5mJ!z7KHUf?y=#6@5Zf7q3#xygTp^#U7M9Lr6-TmbMb+y7!Pe!DNLcGZaR=aTvgabp$Y=Ya#et+_EcJ+Q^-yr3qcw2BPj7r$XxTJ2Zgh^3ZTYWstdUnaFp%jCgq&F=gUN3P_RHecJ&_7jnSYVWgCvj5R_HSX=GwVK=2$czzm$ddZSu-rk8Z!6!FSMN?zB3YzjTz5*zN',
     };
 
-    const response = await axios.post(`http://vsk8s.californiasa.com.ar:31030/supermercados/api/query/aplicaciones?personal=${username}&aplicacion=0`, null, {
+    const response = await axios.post(`http://kcode.californiasa.com.ar:31030/supermercados/api/query/aplicaciones?personal=${username}&aplicacion=0`, null, {
       headers: headers,
     });
 
@@ -57,7 +57,7 @@ export const handleBarCodeScanned = async ({ type, data }, setScanned, setProduc
       'X-Token': 'mu@3Y7RTumKh^FbEZD?aD9*5qctA$a#3eB*7PKFPp_!FNjgdP!V4Z2w+w5mJ!z7KHUf?y=#6@5Zf7q3#xygTp^#U7M9Lr6-TmbMb+y7!Pe!DNLcGZaR=aTvgabp$Y=Ya#et+_EcJ+Q^-yr3qcw2BPj7r$XxTJ2Zgh^3ZTYWstdUnaFp%jCgq&F=gUN3P_RHecJ&_7jnSYVWgCvj5R_HSX=GwVK=2$czzm$ddZSu-rk8Z!6!FSMN?zB3YzjTz5*zN',
     };
     const sku = data; // El código de barras escaneado
-    const url = `http://vsk8s.californiasa.com.ar:31030/supermercados/api/query/sku?sucursal=7&deposito=7&sku=${sku}`;
+    const url = `http://kcode.californiasa.com.ar:31030/supermercados/api/query/sku?sucursal=7&deposito=7&sku=${sku}`;
 
     const response = await axios.post(url, null, { headers });
 

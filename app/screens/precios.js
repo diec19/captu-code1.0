@@ -1,17 +1,30 @@
 // precios.js
 
-import React, { useState, useEffect } from "react";
-import { Text, View, StyleSheet, Button, Modal, Pressable, ScrollView } from "react-native";
+import React, { useState, useEffect,useCallback, useRef, useMemo } from "react";
+import { Text, View, StyleSheet, Button, Modal, Pressable, ScrollView,TextInput } from "react-native";
 import { Camera, CameraView } from "expo-camera";
 import { handleBarCodeScanned } from "../libs/authService";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import BottomSheet from "@gorhom/bottom-sheet";
+import Icon from 'react-native-vector-icons/MaterialIcons';
+
+
+
 
 export default function Precios() {
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
   const [productInfo, setProductInfo] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [productCode, setProductCode] = useState("");
 
-  useEffect(() => {
+  const BottomSheetref = useRef(null);
+  const snapPoints = useMemo(()=>["1%","1%","80%"])
+
+ 
+ 
+
+  useEffect(() => {    //detecta un evento de permiso de camara
     const getCameraPermissions = async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
       setHasPermission(status === "granted");
@@ -20,7 +33,7 @@ export default function Precios() {
     getCameraPermissions();
   }, []);
 
-  useEffect(() => {
+  useEffect(() => {   //para el modal
     if (productInfo) {
       setModalVisible(true);
     }
@@ -33,14 +46,37 @@ export default function Precios() {
     return <Text>No access to camera</Text>;
   }
 
-  // Extract the description and price from productInfo
-  const productDetails = productInfo?.objects?.map((item) => ({
+  const handleCloseAction=()=>BottomSheetref.current?.close();
+  const handleOpenPress=()=>BottomSheetref.current?.expand();
+
+  const handleSearch = () => {
+   // Lógica para buscar el producto por código en la base de datos simulada
+   const foundProduct = productsDatabase.find(product => product.code === productCode);
+
+   if (foundProduct) {
+     // Si el producto es encontrado, actualiza el estado
+     setProductInfo({ objects: [foundProduct] });
+   } else {
+     // Si el producto no es encontrado, muestra un mensaje de error
+     alert("Producto no encontrado.");
+   }
+   
+   // Cierra el BottomSheet después de la búsqueda
+   BottomSheetref.current?.close();
+  };
+
+  const productDetails = productInfo?.objects?.map((item) => ({  //recoore y extrae el precio y descripcion del producto
     descripcion: item.descripcion,
     precio_publico: item.precio_publico,
   }));
 
   return (
+    <GestureHandlerRootView style={{flex:1}}>
+      
     <View style={styles.container}>
+
+    
+
       <CameraView
         onBarcodeScanned={scanned ? undefined : (event) => handleBarCodeScanned(event, setScanned, setProductInfo)}
         barcodeScannerSettings={{
@@ -48,6 +84,8 @@ export default function Precios() {
         }}
         style={StyleSheet.absoluteFillObject}
       />
+     
+      
 
       {/* Top Overlay */}
       <View style={[styles.overlay, styles.topOverlay]} />
@@ -58,9 +96,15 @@ export default function Precios() {
       {/* Right Overlay */}
       <View style={[styles.overlay, styles.rightOverlay]} />
 
+       {/* Botón con ícono redondeado */}
+       <Pressable style={styles.floatingButton} onPress={handleOpenPress}>
+          <Icon name="add" size={30} color="#fff" />
+        </Pressable>
+
       {scanned && (
         <Button title={"Presione para Escanear"} onPress={() => setScanned(false)} />
       )}
+
 
       {/* Modal for Product Info */}
       <Modal
@@ -94,8 +138,38 @@ export default function Precios() {
             </Pressable>
           </View>
         </View>
-      </Modal>
-    </View>
+      </Modal>    
+      
+      <View>  
+     </View>
+    
+      
+      </View>
+      <BottomSheet
+        
+        ref={BottomSheetref}
+        index={1}
+        snapPoints={snapPoints}
+        backgroundStyle={{backgroundStyle:"#fff"}}
+      
+      >      
+          <View style={styles.bottomSheetContent}>
+            <Text style={styles.bottomSheetTitle}>Buscar Producto</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ingrese el código del producto"
+              value={productCode}
+              onChangeText={setProductCode}
+            />
+            <Button title="Buscar" onPress={handleSearch} />
+            <Button title="Cerrar" onPress={handleCloseAction} />
+          </View>
+      </BottomSheet>
+      </GestureHandlerRootView>
+     
+    
+      
+    
   );
 }
 
@@ -181,7 +255,7 @@ const styles = StyleSheet.create({
    
   },
   button: {
-    borderRadius: 5,
+    borderRadius: 20,
     padding: 10,
     elevation: 10,
     
@@ -195,4 +269,19 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
   },
+
+  floatingButton: {
+    position: 'absolute',
+    bottom: 300,
+    right: 30,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#2196F3',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+  }
+
+
 });
