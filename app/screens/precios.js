@@ -1,12 +1,15 @@
-// precios.js
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Text, View, StyleSheet, Button, Modal, Pressable, ScrollView, TextInput, Alert,Keyboard } from 'react-native';
+import { Camera, CameraView } from 'expo-camera';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import BottomSheet from '@gorhom/bottom-sheet';
+import { Vibration } from 'react-native';
+import { Audio } from 'expo-av';
 
-import React, { useState, useEffect,useCallback, useRef, useMemo } from "react";
-import { Text, View, StyleSheet, Button, Modal, Pressable, ScrollView,TextInput } from "react-native";
-import { Camera, CameraView } from "expo-camera";
-import { handleBarCodeScanned } from "../libs/authService";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import BottomSheet from "@gorhom/bottom-sheet";
-import Icon from 'react-native-vector-icons/MaterialIcons';
+
+
+import axios from 'axios';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 
 
@@ -16,28 +19,67 @@ export default function Precios() {
   const [scanned, setScanned] = useState(false);
   const [productInfo, setProductInfo] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [productCode, setProductCode] = useState("");
+  const [productCode, setProductCode] = useState('');
+  
 
   const BottomSheetref = useRef(null);
-  const snapPoints = useMemo(()=>["1%","1%","80%"])
+  const textInputRef = useRef(null);
+  const snapPoints = useMemo(() => ['1%', '1%', '50%'], []);
+  const [sound, setSound] = useState(null);
 
- 
- 
-
-  useEffect(() => {    //detecta un evento de permiso de camara
+  useEffect(() => {
     const getCameraPermissions = async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === "granted");
+      setHasPermission(status === 'granted');
     };
-
     getCameraPermissions();
   }, []);
 
-  useEffect(() => {   //para el modal
+  useEffect(() => {
     if (productInfo) {
       setModalVisible(true);
     }
   }, [productInfo]);
+
+  useEffect(() => {
+    if (textInputRef.current) {
+      textInputRef.current.focus();
+    }
+  }, [BottomSheetref.current?.expanded]);
+
+   // Vibrar cuando el modal se vuelve visible
+   useEffect(() => {
+    if (modalVisible) {
+      Vibration.vibrate(500); // Vibrar durante 500 ms
+    }
+  }, [modalVisible]);
+
+
+ 
+ // Cargar y reproducir el sonido
+ useEffect(() => {
+  const loadAndPlaySound = async () => {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        require('../assets/beep.mp3') // Asegúrate de que la ruta sea correcta
+      );
+      setSound(sound);
+      await sound.playAsync(); // Reproduce el sonido
+    } catch (error) {
+      console.error('Error loading or playing sound:', error);
+    }
+  };
+
+  if (modalVisible) {
+    loadAndPlaySound();
+  }
+
+  return () => {
+    if (sound) {
+      sound.unloadAsync();
+    }
+  };
+}, [modalVisible]);
 
   if (hasPermission === null) {
     return <Text>Requesting for camera permission</Text>;
@@ -46,48 +88,60 @@ export default function Precios() {
     return <Text>No access to camera</Text>;
   }
 
-  const handleCloseAction=()=>BottomSheetref.current?.close();
-  const handleOpenPress=()=>BottomSheetref.current?.expand();
+  const handleCloseAction = () => BottomSheetref.current?.close();
+  const handleOpenPress = () => BottomSheetref.current?.expand();
 
-  const handleSearch = () => {
-   // Lógica para buscar el producto por código en la base de datos simulada
-   const foundProduct = productsDatabase.find(product => product.code === productCode);
-
-   if (foundProduct) {
-     // Si el producto es encontrado, actualiza el estado
-     setProductInfo({ objects: [foundProduct] });
-   } else {
-     // Si el producto no es encontrado, muestra un mensaje de error
-     alert("Producto no encontrado.");
-   }
-   
-   // Cierra el BottomSheet después de la búsqueda
-   BottomSheetref.current?.close();
+  const fetchProductInfo = async (sku) => {
+    try {
+      const headers = {
+        'X-Token': 'mu@3Y7RTumKh^FbEZD?aD9*5qctA$a#3eB*7PKFPp_!FNjgdP!V4Z2w+w5mJ!z7KHUf?y=#6@5Zf7q3#xygTp^#U7M9Lr6-TmbMb+y7!Pe!DNLcGZaR=aTvgabp$Y=Ya#et+_EcJ+Q^-yr3qcw2BPj7r$XxTJ2Zgh^3ZTYWstdUnaFp%jCgq&F=gUN3P_RHecJ&_7jnSYVWgCvj5R_HSX=GwVK=2$czzm$ddZSu-rk8Z!6!FSMN?zB3YzjTz5*zN',
+      };
+      const url = `http://kcode.californiasa.com.ar:31030/supermercados/api/query/sku?sucursal=7&deposito=7&sku=${sku}`;
+      const response = await axios.post(url, null, { headers });
+      if (response.data) {
+        setProductInfo(response.data); // Guardar el producto escaneado en el estado
+      } else {
+        Alert.alert('Información', 'No se recibieron datos del servidor.');
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'No se pudo obtener la información del producto');
+    }
   };
 
-  const productDetails = productInfo?.objects?.map((item) => ({  //recoore y extrae el precio y descripcion del producto
+  const handleSearch = () => {
+    if (productCode) {
+      fetchProductInfo(productCode);
+      Keyboard.dismiss(); // Cierra el teclado
+    } else {
+      Alert.alert('Error', 'Ingrese un código de producto.');
+    }
+    BottomSheetref.current?.close();
+  };
+
+  const handleBarCodeScanned = async ({ type, data }) => {
+    setScanned(true);
+    fetchProductInfo(data); // Usa el código escaneado para buscar el producto
+  };
+
+  const productDetails = productInfo?.objects?.map((item) => ({
     descripcion: item.descripcion,
     precio_publico: item.precio_publico,
   }));
 
   return (
-    <GestureHandlerRootView style={{flex:1}}>
-      
-    <View style={styles.container}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={styles.container}>
+        <CameraView
+          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+          barcodeScannerSettings={{
+            barcodeTypes: ['qr', 'pdf417', 'ean13', 'upc_a', 'upc_e', 'code128', 'ean8', 'code39'],
+          }}
+          style={StyleSheet.absoluteFillObject}
+        />
 
-    
 
-      <CameraView
-        onBarcodeScanned={scanned ? undefined : (event) => handleBarCodeScanned(event, setScanned, setProductInfo)}
-        barcodeScannerSettings={{
-          barcodeTypes: ["qr", "pdf417", "ean13", "upc_a", "upc_e", "code128", "ean8", "code39"],
-        }}
-        style={StyleSheet.absoluteFillObject}
-      />
-     
-      
-
-      {/* Top Overlay */}
+          {/* Top Overlay */}
       <View style={[styles.overlay, styles.topOverlay]} />
       {/* Bottom Overlay */}
       <View style={[styles.overlay, styles.bottomOverlay]} />
@@ -96,80 +150,88 @@ export default function Precios() {
       {/* Right Overlay */}
       <View style={[styles.overlay, styles.rightOverlay]} />
 
-       {/* Botón con ícono redondeado */}
-       <Pressable style={styles.floatingButton} onPress={handleOpenPress}>
-          <Icon name="add" size={30} color="#fff" />
+
+        <Pressable style={styles.floatingButton} onPress={handleOpenPress}>
+        <MaterialIcons name="123" size={24} color="black" />
         </Pressable>
-
-      {scanned && (
-        <Button title={"Presione para Escanear"} onPress={() => setScanned(false)} />
-      )}
-
-
-      {/* Modal for Product Info */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => {
-          setModalVisible(!modalVisible);
-          setProductInfo(null);  // Reset product info
-        }}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Información del Producto</Text>
-            <ScrollView>
-              {productDetails?.map((item, index) => (
-                <View key={index} style={styles.productInfo}>
-                  <Text style={styles.modalText}> {item.descripcion}</Text>
-                  <Text style={styles.modalTextPrecio}>${item.precio_publico.toFixed(2)}</Text>
-                </View>
-              ))}
-            </ScrollView>
-            <Pressable
-              style={[styles.button, styles.buttonClose]}
-              onPress={() => {
-                setModalVisible(!modalVisible);
-                setProductInfo(null);  // Reset product info
-              }}
-            >
-              <Text style={styles.buttonText}>Cerrar</Text>
-            </Pressable>
+        {scanned && (
+          <Button title={"Presione para Escanear"} onPress={() => setScanned(false)} />
+        )}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => {
+            setModalVisible(!modalVisible);
+            setProductInfo(null);  // Reset product info
+          }}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Información del Producto</Text>
+              <ScrollView>
+                {productDetails?.map((item, index) => (
+                  <View key={index} style={styles.productInfo}>
+                    <Text style={styles.modalText}>{item.descripcion}</Text>
+                    <Text style={styles.modalTextPrecio}>${item.precio_publico.toFixed(2)}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+              <Pressable
+                style={[styles.button, styles.buttonClose]}
+                onPress={() => {
+                  setModalVisible(!modalVisible);
+                  setProductInfo(null);  // Reset product info
+                }}
+              >
+                <Text style={styles.buttonText}>Cerrar</Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
-      </Modal>    
-      
-      <View>  
-     </View>
-    
-      
-      </View>
-      <BottomSheet
-        
-        ref={BottomSheetref}
-        index={1}
-        snapPoints={snapPoints}
-        backgroundStyle={{backgroundStyle:"#fff"}}
-      
-      >      
-          <View style={styles.bottomSheetContent}>
+        </Modal>
+        <BottomSheet
+          ref={BottomSheetref}
+          index={1}
+          snapPoints={snapPoints}
+          backgroundStyle={{ backgroundColor: '#f8f9fa' }}
+          handleIndicatorStyle={styles.handleIndicator}
+          onChange={(index) => {
+            if (index === 1) {
+              setTimeout(() => {
+                if (textInputRef.current) {
+                  textInputRef.current.focus();
+                }
+              }, 300); // Delay to ensure the bottom sheet is fully expanded
+            }
+          }}
+        >
+         <View style={styles.bottomSheetContent}>
             <Text style={styles.bottomSheetTitle}>Buscar Producto</Text>
             <TextInput
+              ref={textInputRef}
               style={styles.input}
               placeholder="Ingrese el código del producto"
               value={productCode}
               onChangeText={setProductCode}
+              keyboardType="numeric" // Solo números
+              maxLength={12} // Opcional: limitar la longitud del código
             />
-            <Button title="Buscar" onPress={handleSearch} />
-            <Button title="Cerrar" onPress={handleCloseAction} />
+            <Pressable
+              style={styles.button}
+              onPress={handleSearch}
+            >
+              <Text style={styles.buttonText}>Buscar</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.button, styles.buttonClose]}
+              onPress={handleCloseAction}
+            >
+              <Text style={styles.buttonText}>Cerrar</Text>
+            </Pressable>
           </View>
-      </BottomSheet>
-      </GestureHandlerRootView>
-     
-    
-      
-    
+        </BottomSheet>
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
@@ -281,7 +343,46 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 5,
-  }
+  },
+  button: {
+    backgroundColor: 'blue',
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  buttonClose: {
+    backgroundColor: 'red',
+  },
+  buttonText: {
+    color: 'white',
+    textAlign: 'center',
+    fontSize: 16,
+  },
+  input: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 2,
+    marginTop: 15,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+  },
+  bottomSheetContent: {
+    padding: 20,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  bottomSheetTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  handleIndicator: {
+    backgroundColor: '#000',
+    height: 6,
+    borderRadius: 3,
+  },
+
 
 
 });

@@ -71,3 +71,4 @@ export const handleBarCodeScanned = async ({ type, data }, setScanned, setProduc
     Alert.alert("Error", "No se pudo obtener la información del producto");
   }
 };
+
