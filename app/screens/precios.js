@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Text, View, StyleSheet, Button, Modal, Pressable, ScrollView, TextInput, Alert,Keyboard } from 'react-native';
+import { Text, View, StyleSheet, Button, Modal, Pressable, ScrollView, TextInput, Alert, Keyboard } from 'react-native';
 import { Camera, CameraView } from 'expo-camera';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet from '@gorhom/bottom-sheet';
@@ -22,7 +22,7 @@ export default function Precios() {
   const [modalVisible, setModalVisible] = useState(false);
   const [productCode, setProductCode] = useState('');
   const [scannerEnabled, setScannerEnabled] = useState(false); // Nuevo estado
-  
+
 
   const BottomSheetref = useRef(null);
   const textInputRef = useRef(null);
@@ -37,54 +37,54 @@ export default function Precios() {
     };
     getCameraPermissions();
   }, []);
-  
-///////////////////////////////////////////////////////////////////////////////
+
+  ///////////////////////////////////////////////////////////////////////////////
   useEffect(() => {
     if (productInfo) {
       setModalVisible(true);   //para que aparesca el modal de precios  y descripcion
     }
   }, [productInfo]);
-/////////////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////////////
   useEffect(() => {
     if (textInputRef.current) {
       textInputRef.current.focus();   ////focus en buscar
     }
   }, [BottomSheetref.current?.expanded]);
-//////////////////////////////////////////////////////////////////////////////////
-   // Vibrar cuando el modal se vuelve visible
-   useEffect(() => {
+  //////////////////////////////////////////////////////////////////////////////////
+  // Vibrar cuando el modal se vuelve visible
+  useEffect(() => {
     if (modalVisible) {
       Vibration.vibrate(500); // Vibrar durante 500 ms
     }
   }, [modalVisible]);
 
-///////////////////////////////////////////////////////////////////////////////////
- 
- // Cargar y reproducir el sonido
- useEffect(() => {
-  const loadAndPlaySound = async () => {
-    try {
-      const { sound } = await Audio.Sound.createAsync(
-        require('../assets/beep.mp3') // Asegúrate de que la ruta sea correcta
-      );
-      setSound(sound);
-      await sound.playAsync(); // Reproduce el sonido
-    } catch (error) {
-      console.error('Error loading or playing sound:', error);
-    }
-  };
+  ///////////////////////////////////////////////////////////////////////////////////
 
-  if (modalVisible) {
-    loadAndPlaySound();
-  }
+  // Cargar y reproducir el sonido
+  useEffect(() => {
+    const loadAndPlaySound = async () => {
+      try {
+        const { sound } = await Audio.Sound.createAsync(
+          require('../assets/beep.mp3') // Asegúrate de que la ruta sea correcta
+        );
+        setSound(sound);
+        await sound.playAsync(); // Reproduce el sonido
+      } catch (error) {
+        console.error('Error loading or playing sound:', error);
+      }
+    };
 
-  return () => {
-    if (sound) {
-      sound.unloadAsync();
+    if (modalVisible) {
+      loadAndPlaySound();
     }
-  };
-}, [modalVisible]);
-/////////////////////////////////////////////////////////////////////////
+
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, [modalVisible]);
+  /////////////////////////////////////////////////////////////////////////
 
 
   const handleCloseAction = () => {
@@ -132,9 +132,17 @@ export default function Precios() {
   const productDetails = productInfo?.objects?.map((item) => ({
     descripcion: item.descripcion,
     precio_publico: item.precio_publico,
+    uxb: item.uxb,
+    stock: item.stock,
   }));
 
-  
+
+  const getTextStyle = (value) => ({
+    ...styles.modalText,
+    color: value < 0 ? 'red' : 'green', // Rojo si negativo, verde si positivo
+  });
+
+
   const handleButtonPress = () => {
     setScanned(!scanned); // Alterna el estado entre true y false
   };
@@ -145,33 +153,33 @@ export default function Precios() {
           onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
           barcodeScannerSettings={{
             barcodeTypes: ['qr', 'pdf417', 'ean13', 'upc_a', 'upc_e', 'code128', 'ean8', 'code39'],
-            
+
           }}
           style={StyleSheet.absoluteFillObject}
         />
 
 
-          {/* Top Overlay */}
-      <View style={[styles.overlay, styles.topOverlay]} />
-      {/* Bottom Overlay */}
-      <View style={[styles.overlay, styles.bottomOverlay]} />
-      {/* Left Overlay */}
-      <View style={[styles.overlay, styles.leftOverlay]} />
-      {/* Right Overlay */}
-      <View style={[styles.overlay, styles.rightOverlay]} />
+        {/* Top Overlay */}
+        <View style={[styles.overlay, styles.topOverlay]} />
+        {/* Bottom Overlay */}
+        <View style={[styles.overlay, styles.bottomOverlay]} />
+        {/* Left Overlay */}
+        <View style={[styles.overlay, styles.leftOverlay]} />
+        {/* Right Overlay */}
+        <View style={[styles.overlay, styles.rightOverlay]} />
 
-      <Pressable
+        <Pressable
           style={styles.floatingButton}
           onPress={handleOpenPress}
         >
           <MaterialIcons name="123" size={50} color="black" />
         </Pressable>
-        
-          <Pressable style={[styles.floatingButtonA, { backgroundColor: scanned ? 'red' : 'green' }]}
-        onPress={handleButtonPress}>
-            <Ionicons name="barcode" size={40} color="black" />
-          </Pressable>
-        
+
+        <Pressable style={[styles.floatingButtonA, { backgroundColor: scanned ? 'red' : 'green' }]}
+          onPress={handleButtonPress}>
+          <Ionicons name="barcode" size={40} color="black" />
+        </Pressable>
+
         <Modal
           animationType="slide"
           transparent={true}
@@ -188,7 +196,18 @@ export default function Precios() {
                 {productDetails?.map((item, index) => (
                   <View key={index} style={styles.productInfo}>
                     <Text style={styles.modalText}>{item.descripcion}</Text>
-                    <Text style={styles.modalTextPrecio}>${item.precio_publico.toFixed(2)}</Text>
+                    <Text style={styles.modalTextPrecio}>{`$${item.precio_publico.toFixed(2)}`}</Text>
+                   
+                    <View style={styles.rowContainer}>
+                      <View style={styles.tag}>
+                        <Text style={styles.tagText}>Stock:</Text>
+                      </View>
+                      <Text style={getTextStyle(item.stock)}>{item.stock}</Text>
+                      <View style={styles.tag}>
+                        <Text style={styles.tagText}>UXB:</Text>
+                      </View>
+                      <Text style={getTextStyle(item.uxb)}>{item.uxb}</Text>
+                    </View>
                   </View>
                 ))}
               </ScrollView>
@@ -220,7 +239,7 @@ export default function Precios() {
             }
           }}
         >
-         <View style={styles.bottomSheetContent}>
+          <View style={styles.bottomSheetContent}>
             <Text style={styles.bottomSheetTitle}>Buscar Producto</Text>
             <TextInput
               ref={textInputRef}
@@ -240,7 +259,7 @@ export default function Precios() {
             <Pressable
               style={[styles.button, styles.buttonClose]}
               onPress={handleCloseAction}
-              
+
 
             >
               <Text style={styles.buttonText}>Cerrar</Text>
@@ -320,28 +339,56 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   modalText: {
-    fontSize: 25,
+    fontSize: 20,
     marginBottom: 5,
     textAlign: "center",
-    
+
   },
   modalTextPrecio: {
-    fontSize: 30,
-    marginBottom: 5,
-    color:"red",
+    fontSize: 40,
+    marginBottom: 30,
+    color: "#0000ff",
     fontWeight: "bold",
     textAlign: "center",
-   
+
+  },
+  rowContainer: {
+    flexDirection: 'row', // Distribute items horizontally
+    alignItems: 'center', // Center items vertically
+    justifyContent: 'center', // Center items horizontally
+    width: '100%', // Ensure row takes full width
+    flexWrap: 'wrap', // Wrap text if necessary
+    marginBottom: 15, // Optional: Add some margin at the bottom if needed
+  },
+  tag: {
+    borderRadius: 15, // Border radius for rounded corners
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    marginHorizontal: 5,
+    backgroundColor: 'lightgreen', // Background color for tag
+    alignItems: 'center', // Center the text inside the tag
+    justifyContent: 'center', // Center the text inside the tag
+  },
+  tagText: {
+    fontSize: 16,
+    color: 'black',
+  },
+
+  separatorLine: {
+    width: '100%',
+    height: 1,
+    backgroundColor: '#ccc', // Color de la línea
+    marginVertical: 10, // Espacio arriba y abajo de la línea
   },
   button: {
     borderRadius: 20,
     padding: 10,
     elevation: 10,
-    
+
   },
   buttonClose: {
-    backgroundColor: "#2196F3",
-    
+    backgroundColor: "lightcoral",
+
   },
   buttonText: {
     color: "white",
