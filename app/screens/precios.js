@@ -10,6 +10,7 @@ import { Audio } from 'expo-av';
 
 import axios from 'axios';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 
 
@@ -20,6 +21,7 @@ export default function Precios() {
   const [productInfo, setProductInfo] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [productCode, setProductCode] = useState('');
+  const [scannerEnabled, setScannerEnabled] = useState(false); // Nuevo estado
   
 
   const BottomSheetref = useRef(null);
@@ -27,26 +29,28 @@ export default function Precios() {
   const snapPoints = useMemo(() => ['1%', '1%', '50%'], []);
   const [sound, setSound] = useState(null);
 
+  ///////////////////////////////////////////////////////////////////////////
   useEffect(() => {
     const getCameraPermissions = async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
+      const { status } = await Camera.requestCameraPermissionsAsync(); // permiso de la camara
       setHasPermission(status === 'granted');
     };
     getCameraPermissions();
   }, []);
-
+  
+///////////////////////////////////////////////////////////////////////////////
   useEffect(() => {
     if (productInfo) {
-      setModalVisible(true);
+      setModalVisible(true);   //para que aparesca el modal de precios  y descripcion
     }
   }, [productInfo]);
-
+/////////////////////////////////////////////////////////////////////////////////////
   useEffect(() => {
     if (textInputRef.current) {
-      textInputRef.current.focus();
+      textInputRef.current.focus();   ////focus en buscar
     }
   }, [BottomSheetref.current?.expanded]);
-
+//////////////////////////////////////////////////////////////////////////////////
    // Vibrar cuando el modal se vuelve visible
    useEffect(() => {
     if (modalVisible) {
@@ -54,7 +58,7 @@ export default function Precios() {
     }
   }, [modalVisible]);
 
-
+///////////////////////////////////////////////////////////////////////////////////
  
  // Cargar y reproducir el sonido
  useEffect(() => {
@@ -80,16 +84,17 @@ export default function Precios() {
     }
   };
 }, [modalVisible]);
+/////////////////////////////////////////////////////////////////////////
 
-  if (hasPermission === null) {
-    return <Text>Requesting for camera permission</Text>;
-  }
-  if (hasPermission === false) {
-    return <Text>No access to camera</Text>;
-  }
 
-  const handleCloseAction = () => BottomSheetref.current?.close();
+  const handleCloseAction = () => {
+    BottomSheetref.current?.close();
+    setProductCode('');
+  }
   const handleOpenPress = () => BottomSheetref.current?.expand();
+
+
+
 
   const fetchProductInfo = async (sku) => {
     try {
@@ -129,6 +134,10 @@ export default function Precios() {
     precio_publico: item.precio_publico,
   }));
 
+  
+  const handleButtonPress = () => {
+    setScanned(!scanned); // Alterna el estado entre true y false
+  };
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
@@ -136,6 +145,7 @@ export default function Precios() {
           onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
           barcodeScannerSettings={{
             barcodeTypes: ['qr', 'pdf417', 'ean13', 'upc_a', 'upc_e', 'code128', 'ean8', 'code39'],
+            
           }}
           style={StyleSheet.absoluteFillObject}
         />
@@ -150,13 +160,18 @@ export default function Precios() {
       {/* Right Overlay */}
       <View style={[styles.overlay, styles.rightOverlay]} />
 
-
-        <Pressable style={styles.floatingButton} onPress={handleOpenPress}>
-        <MaterialIcons name="123" size={24} color="black" />
+      <Pressable
+          style={styles.floatingButton}
+          onPress={handleOpenPress}
+        >
+          <MaterialIcons name="123" size={50} color="black" />
         </Pressable>
-        {scanned && (
-          <Button title={"Presione para Escanear"} onPress={() => setScanned(false)} />
-        )}
+        
+          <Pressable style={[styles.floatingButtonA, { backgroundColor: scanned ? 'red' : 'green' }]}
+        onPress={handleButtonPress}>
+            <Ionicons name="barcode" size={40} color="black" />
+          </Pressable>
+        
         <Modal
           animationType="slide"
           transparent={true}
@@ -214,7 +229,7 @@ export default function Precios() {
               value={productCode}
               onChangeText={setProductCode}
               keyboardType="numeric" // Solo números
-              maxLength={12} // Opcional: limitar la longitud del código
+              maxLength={14} // Opcional: limitar la longitud del código
             />
             <Pressable
               style={styles.button}
@@ -225,6 +240,8 @@ export default function Precios() {
             <Pressable
               style={[styles.button, styles.buttonClose]}
               onPress={handleCloseAction}
+              
+
             >
               <Text style={styles.buttonText}>Cerrar</Text>
             </Pressable>
@@ -331,7 +348,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
   },
-
   floatingButton: {
     position: 'absolute',
     bottom: 300,
@@ -343,6 +359,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 5,
+  },
+  floatingButtonA: {
+    position: 'absolute',
+    bottom: 200,
+    right: 30,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+  },
+  buttonEnabled: {
+    backgroundColor: 'green',
+  },
+  buttonDisabled: {
+    backgroundColor: 'red',
   },
   button: {
     backgroundColor: 'blue',
@@ -386,3 +419,4 @@ const styles = StyleSheet.create({
 
 
 });
+
